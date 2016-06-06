@@ -5,7 +5,8 @@
 #include <iostream>  // for operator<<, basic_ostream, endl, ostream, cerr
 #include <string>    // for string, char_traits
 #include <getopt.h>   // for getopt, optarg, opterr
-//TODO: change to QT program args parsing
+
+#include <vector>
 
 #include "utilities.h"
 #include "config.h"
@@ -67,11 +68,11 @@ string parse_program_args(int argc, char *argv[])
 
 bool validate_input(const string &str){
 
-    if(str.length() < min_input_word_length) {
-        cerr << "\nInput word must contain at least" << min_input_word_length << "characters\n" << endl;
+    if(str.length() < k_min_input_word_length) {
+        cerr << "\nInput word must contain at least" << k_min_input_word_length << "characters\n" << endl;
         return false;
-    } else if(str.length() > max_input_word_length) {
-        cerr << "\nInput word must contain not more than" << max_input_word_length << "characters\n" << endl;
+    } else if(str.length() > k_max_input_word_length) {
+        cerr << "\nInput word must contain not more than" << k_max_input_word_length << "characters\n" << endl;
         return false;
     }
 
@@ -88,85 +89,96 @@ bool validate_input(const string &str){
 
 
 
-void print_help(  char *argv[])
+void print_help( char *argv[])
 {
-    cout << "\nUsage: "  << argv[0]  << " [-h help] [-w word] \n"<< endl;
+    cout << "\nUsage: "  << argv[0]  << "[-h help] [-w word] \n"<< endl;
     cout << "\nFor example :\n" << endl;
     cout <<  argv[0] << "\n -w read \n\n"  << endl;
     exit(EXIT_FAILURE);
 }
 
 
-
-
-//--------------------------------IN PROGRESS--------------------------------------
-
-
-
-
-//TODO: test
-//function checks if the strings contain the same chars
-bool char_compare( const string &str1, const string &str2){
-
-    if (str1.length() != str2.length()){
-        cerr << "ERROR: string  lengths must be equal" << endl;
-        cerr << " str1: "<< str1.length() << "str2: " << str2.length()<< endl;
-        return false;
+void print_multimap(string_multimap_t &mm){
+    int count = 0;
+    for(auto iter = mm.begin(); iter != mm.end(); ++iter){
+        cout << "  [" << iter->first << ", " << iter->second << "]" << endl;
+        count++;
     }
-
-    string str1_copy(str1);
-    string str2_copy(str2);
-
-    //normalizing string
-    std::transform(str1_copy.begin(), str1_copy.end(), str1_copy.begin(), ::tolower);
-    std::transform(str2_copy.begin(), str2_copy.end(), str2_copy.begin(), ::tolower);
-
-    while(str1_copy.size() != 0){
-
-        char ch = str1_copy.back();
-        str1_copy.pop_back();
-
-        for (size_t i = 0 ; i <= str2_copy.length(); i++){
-
-            if (ch == str2_copy[i]){
-
-                str2_copy.erase(i, 1);
-                break;
-            }
-        }
-    }
-
-    if (str2_copy.length() == 0)
-        return true;
-
-    else return false;
+    cout << "  Total: " << count << endl;
 }
 
 
 
-//TODO: test
-void print_multimap(string_multimap &mm){
+void print_map_vector(map_vector_t &mv){
+    int count = 0, cnt = 0;
+    string prev_key, prev_value;
 
-    std::pair<string_multimap::iterator, string_multimap::iterator> mm_iter;
-
-    for(string_multimap::iterator iter = mm.begin(); iter != mm.end(); ++iter){
-
-        mm_iter = mm.equal_range(iter->first);
-
-        if( std::distance(mm_iter.first,mm_iter.second) > 1){
-            //several values under one key, each value is
-
-            for (string_multimap::iterator it = mm_iter.first; it != mm_iter.second;
-
-                 ++it)
-            {
-                cout << "  [" << (*it).first << ", " << (*it).second << "]" << endl;
-            }
+    for(auto map_iter : mv){
+        for(auto iter : map_iter){
+            count++;
         }
     }
 
+    cout << "Found " << count << " anagrams: \n" << endl;
+
+    for(auto map_iter : mv){  //vector of maps
+
+        for(auto iter : map_iter){
+
+            if(prev_value.empty()){
+                prev_key = iter.first;
+                prev_value = iter.second;
+                cnt++;
+                continue;
+            }
+
+            if(iter.first == prev_key){
+
+                if(cnt == count - 1){
+                    cout << prev_value << ", " << iter.second << "\n\n" << endl;
+                }else{
+                    cout <<  prev_value << ", " ;
+                    cnt++;
+                }
+            }   else{
+                if(cnt == count - 1){
+                    cout << prev_value << " -> " << iter.second << "\n\n" << endl;
+                }else{
+                    cout <<  prev_value << " -> " ;
+                    cnt++;
+                }
+            }
+
+            prev_key = iter.first;
+            prev_value = iter.second;
+
+        }
+    }
 }
 
 
+
+
+//multimap extension to extract pair of key-values for given key from one multimap and insert into another
+void multimap_transfer_values_for_key(string_multimap_t &mm_from,string_multimap_t &mm_to, const string &key){
+
+
+    auto range_iters = mm_from.equal_range(key);
+
+    if( std::distance(range_iters.first,range_iters.second) > 1){
+
+        cout << "Found several solutions" << endl;
+
+        for (auto it = range_iters.first; it != range_iters.second; ++it)
+        {
+
+
+            mm_to.insert(*it);
+        }
+
+    }else {
+        mm_to.insert(*range_iters.first);
+    }
+}
 
 
